@@ -26,8 +26,9 @@ CALIPTRA_INTERNAL_QSPI ?= 1
 CALIPTRA_INTERNAL_TRNG ?= 1
 CALIPTRA_INTERNAL_UART ?= 1
 CALIPTRA_INTERNAL_I3C  ?= 0
-VERILATOR = verilator
-GCC_PREFIX = riscv64-unknown-elf
+VERILATOR=verilator
+#GCC_PREFIX = riscv64-unknown-elf
+GCC_PREFIX=riscv32-none-elf
 BUILD_DIR = $(CURDIR)
 
 # Ensure that RISC-V toolchain is installed
@@ -37,11 +38,11 @@ endif
 
 rv_gcc_version = $(strip $(shell $(GCC_PREFIX)-gcc --version | head -1 | sed "s/$(GCC_PREFIX)-gcc (.*) //"))
 $(info rv_gcc_version is $(rv_gcc_version))
-ifeq "12.2.0" "$(word 1, $(sort 12.2.0 $(rv_gcc_version)))"
+#ifeq "12.2.0" "$(word 1, $(sort 12.2.0 $(rv_gcc_version)))"
+#ABI = -mabi=ilp32 -march=rv32imc_zicsr_zifencei
+#else
 ABI = -mabi=ilp32 -march=rv32imc_zicsr_zifencei
-else
-ABI = -mabi=ilp32 -march=rv32imc
-endif
+#endif
 
 # Define test name
 TESTNAME ?= iccm_lock
@@ -325,7 +326,7 @@ program.hex: $(OFILE_CRT) $(OFILES) $(LINK)
 # Entire image will be loaded into the mailbox, so it must fit the 128KiB memory
 %.hex: $(OFILES) $(LINK)
 	@echo Building $(TESTNAME)
-	$(GCC_PREFIX)-gcc $(ABI) -Wl,-Map=$(TESTNAME).map -lgcc -T$(LINK) -o $(TESTNAME).exe $(OFILES) -nostartfiles  $(TEST_LIBS)
+	$(GCC_PREFIX)-gcc $(ABI) -Wl,-Map=$(TESTNAME).map -nostdlibs -lgcc -T$(LINK) -o $(TESTNAME).exe $(OFILES) -nostartfiles  $(TEST_LIBS)
 	-$(GCC_PREFIX)-objcopy -O verilog -R .eh_frame --pad-to 0x20000 --no-change-warnings $(TESTNAME).exe $@
 	$(GCC_PREFIX)-objdump -S  $(TESTNAME).exe > $(TESTNAME).dis
 	$(GCC_PREFIX)-size        $(TESTNAME).exe | tee $(TESTNAME).size
